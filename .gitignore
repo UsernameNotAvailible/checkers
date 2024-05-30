@@ -2,6 +2,9 @@
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+!**/src/Core/CheckersLogicTest/
+htmlReport
+index-files
 
 ### Eclipse ###
 .apt_generated

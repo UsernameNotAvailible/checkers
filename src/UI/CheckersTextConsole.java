@@ -1,15 +1,31 @@
 package UI;
 
+import Core.CheckersComputerPlayer;
 import Core.CheckersLogic;
 import Core.Move;
 
 import java.util.Scanner;
-
+/**
+ * A class providing an interface to play the game, by printing to the console
+ * @author Artem Tarnavskyi
+ * @version 0.3
+ */
 public class CheckersTextConsole {
-    private static CheckersLogic c = new CheckersLogic();
+    private static CheckersLogic game;
+    private static CheckersComputerPlayer engine;
+    /** Default constructor */
     public CheckersTextConsole() {
+        game = new CheckersLogic();
     }
-    public static void printBoard(int[] board) {
+    /**
+     * Takes a FEN string. Sets the starting position according to it.
+     * @param FEN FEN string. Format [Colour]:[W][square],[square]...,[square]:[B][square],[square],...,[square]:. Does not include the number of moves since the start of the game.
+     * */
+    public CheckersTextConsole(String FEN) {
+        game = new CheckersLogic(FEN);
+    }
+    /** prints out the board in a readable way*/
+    private static void printBoard(int[] board) {
         int counter = 0;
         int fileCounter = 8;
         char checker = ' ';
@@ -31,31 +47,51 @@ public class CheckersTextConsole {
         //System.out.println("   ______________________");
         System.out.println("   a, b, c, d, e, f, g, h");
     }
-    public static void gameLoop() {
+    /**
+     * game loop method. It starts the game from the traditional starting position.
+     * Informs players of whose move it is.
+     * Informs players of the state of the game (who won).
+     * Informs players of the legality of their move.
+     * Gives an example move.
+     * If the move entered by the player is illegal, prompts the player to try again.
+     * */
+    public void gameLoop() {
         boolean loop = true;
         Scanner scanner = new Scanner(System.in);
-        String input = "";
+        String input;
         Move move;
-        c.emptyBoard();
-        c.setWhite();
+        System.out.println("Begin game. ");
         while (loop) {
-            printBoard(c.getBoard());
+            //game.debugPrint();
+            printBoard(game.getBoard());
             System.out.println();
-            if (c.getGameState() == 1) System.out.println("Black won");
-            else if (c.getGameState() == -1) System.out.println("White won");
-            input = scanner.nextLine();
-            if (input.equalsIgnoreCase("stop")) {
-                loop = false;
+            if (game.getGameState() == 1) {System.out.println("Black won"); loop = false;}
+            else if (game.getGameState() == -1) {System.out.println("White won"); loop = false;}
+            else if (game.getGameState() == 0) {
+                if (game.isBlacksMove()) System.out.println("Black's move");
+                else System.out.println("White's move");
+                System.out.println("Choose a cell position of piece to be moved and the new position. e.g., 3a-4b");
+                input = scanner.nextLine();
+                if (input.equalsIgnoreCase("stop")) {
+                    loop = false;
+                }
+                else {
+                    try {
+                        move = interpretMove(input);
+                        if (game.ruleCheck(move)) game.makeMove(move);
+                        else System.out.println("illegal move");
+                    }
+                    catch (Exception e) {
+                        System.out.println("A move must be of the format rankFile-rankFile rank is a number between 1 and 8" + "\n" +
+                                "and file is a lowercase latter of latin alphabet between a and h");
+                    }
+                }
             }
-            else {
-                move = interpretMove(input);
-                if (c.ruleCheck(move)) c.makeMove(move);
-                else System.out.println("illegal move");
-            }
+
 
         }
     }
-    private static Move interpretMove(String input) {
+    private static Move interpretMove(String input) throws IllegalArgumentException{
         Move move = new Move();
         //int counter = 0;
         boolean start = true;
@@ -72,33 +108,60 @@ public class CheckersTextConsole {
             }
             if (c == 45) start = false;
         }
-        if (c.checkChecker(move.startingSquare) == CheckersLogic.BLACK_CHECKER) move.colour = true;
-        else if (c.checkChecker(move.startingSquare) == CheckersLogic.WHITE_CHECKER) move.colour = false;
-        else System.out.println("invalid move");
+        if (move.startingSquare < 0 || move.startingSquare > 63) throw new IllegalArgumentException();
+        if (game.checkChecker(move.startingSquare) == CheckersLogic.BLACK_CHECKER) move.colour = true;
+        else if (game.checkChecker(move.startingSquare) == CheckersLogic.WHITE_CHECKER) move.colour = false;
+        else throw new IllegalArgumentException();
         //System.out.println(move);
         return move;
     }
+    /**
+     * Allows to play the engine. Takes a boolean as an argument, true sets engine as white, false sets engine as black.
+     * If the move entered by the player is illegal, prompts the player to try again.
+     * @param side Sets the colour of the player. True = black, false = white.
+     * */
+    public void playTheEngine(boolean side) {
+        engine = new CheckersComputerPlayer(game.getFEN());
+        boolean loop = true;
+        Scanner scanner = new Scanner(System.in);
+        String input;
+        Move move;
+        System.out.println("Begin game. ");
+        while (loop) {
+            //game.debugPrint();
+            printBoard(game.getBoard());
+            System.out.println();
+            if (game.getGameState() == 1) {System.out.println("Black won"); loop = false;}
+            else if (game.getGameState() == -1) {System.out.println("White won"); loop = false;}
+            else if (game.getGameState() == 0) {
+                if (game.isBlacksMove() == side) {
+                    System.out.println("Player's move");
+                    System.out.println("Choose a cell position of piece to be moved and the new position. e.g., 3a-4b");
+                    input = scanner.nextLine();
+                    if (input.equalsIgnoreCase("stop")) {
+                        loop = false;
+                    } else {
+                        try {
+                            move = interpretMove(input);
+                            if (game.ruleCheck(move)) {
+                                game.makeMove(move);
+                                engine.makeMove(move);
+                            }
+                            else System.out.println("illegal move");
+                        } catch (Exception e) {
+                            System.out.println("A move must be of the format rankFile-rankFile rank is a number between 1 and 8" + "\n" +
+                                    "and file is a lowercase latter of latin alphabet between a and h");
+                        }
+                    }
+                }
+                else {
+                    move = engine.returnMove();
+                    game.makeMove(move);
+                    engine.makeMove(move);
+                }
+            }
 
-    private static void debugPrint() {
 
-    }
-
-    public static void main(String[] args) {
-        gameLoop();
-
-        /*for (int i = 0; i < 64; i++) {
-            if (i % 8 == 0) System.out.println();
-            System.out.print(i + "," + "\t");
         }
-
-         */
-        /*for (int i = 0; i < 64; i++) {
-            if (i % 8 == 0) System.out.println();
-            System.out.print(i % 8 + "," + "\t");
-        }
-
-         */
-
-
     }
 }
