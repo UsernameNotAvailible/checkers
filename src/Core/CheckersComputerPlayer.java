@@ -10,6 +10,8 @@ public class CheckersComputerPlayer {
     private static final int checkersWorth = 1;
     private Move move = new Move();
     private final CheckersLogic game;
+    private static final int minimalPossible = -100;
+    private static final int maximumPossible = 100;
     /** A default constructor. It starts with a standard starting position*/
     public CheckersComputerPlayer() {
         game = new CheckersLogic();
@@ -26,7 +28,7 @@ public class CheckersComputerPlayer {
      * @return move field of the class.
      * */
     public Move returnMove() {
-        recursiveEvaluate(4, -100, 100, 4);
+        recursiveEvaluate(4, minimalPossible, maximumPossible, 4);
         return move;
     }
     /**
@@ -35,6 +37,12 @@ public class CheckersComputerPlayer {
      * */
     public void makeMove(Move move) {
         game.makeMove(move);}
+
+    /**
+     * Counts material on one side
+     * @param side 1 for white, 2 for black
+     * @return checker count for one side
+     */
     private int countMaterial(int side) {
         int evaluation = 0;
         int[] board = game.getBoard();
@@ -45,6 +53,11 @@ public class CheckersComputerPlayer {
         }
         return evaluation;
     }
+
+    /**
+     * Evaluates the position on the board, by counting material for both sides, and subtracting one from another
+     * @return the evaluation of the position on the board. From the perspective of the side whose move it is
+     */
     private int evaluate() {
         int whiteEval = countMaterial(CheckersLogic.WHITE_CHECKER);
         int blackEval = countMaterial(CheckersLogic.BLACK_CHECKER);
@@ -53,6 +66,15 @@ public class CheckersComputerPlayer {
         if (game.isBlacksMove()) perspective = -1;
         return evaluation * perspective;
     }
+
+    /**
+     * Evaluates the position up to certain depth
+     * @param depth Depth of the evaluation
+     * @param alpha Alpha parameter for alpha-beta pruning. Starts with something too small to be a possible evaluation
+     * @param beta Beta parameter for alpha-beta pruning. Starts with something too big to be a possible evaluation.
+     * @param start Exists to check if the function is on its lowest depth, and if so, record the current best move.
+     * @return the evaluation of the position.
+     */
     private int recursiveEvaluate(int depth, int alpha, int beta, int start) {
         if (depth == 0) {
             return evaluate();
@@ -79,6 +101,13 @@ public class CheckersComputerPlayer {
         }
         return alpha;
     }
+
+    /**
+     * Evaluates all captures, until they are exhausted
+     * @param alpha Alpha parameter for alpha-beta pruning. Passed from the recursive evaluation.
+     * @param beta Beta parameter for alpha-beta pruning. Passed from the recursive evaluation.
+     * @return The evaluation of the position, after the captures have been exhausted.
+     */
     private int recursiveCapturesEvaluation(int alpha, int beta) {
         Move[] captureMoves = game.getCaptureMoves();
         int evaluation = evaluate();
@@ -98,6 +127,13 @@ public class CheckersComputerPlayer {
         }
         return alpha;
     }
+
+    /**
+     * Helps recursive captures evaluation go through the streak.
+     * @param alpha Alpha parameter for alpha-beta pruning. Passed from the recursive captures evaluation.
+     * @param beta Beta parameter for alpha-beta pruning. Passed from the recursive captures evaluation.
+     * @return calls recursive captures evaluation to return to evaluating the position after the streak ended.
+     */
     private int capturesStreakHelper(int alpha, int beta) {
         if (game.isOnTheStreak()) {
             Move[] captures = game.getLegalMoves();
@@ -112,6 +148,14 @@ public class CheckersComputerPlayer {
         }
         return 0;
     }
+    /**
+     * Helps recursive evaluation go through the streak
+     * @param depth Depth parameter of the recursive evaluation. Passed back to it once the streak is over.
+     * @param alpha Alpha parameter for alpha-beta pruning. Passed from the recursive evaluation.
+     * @param beta Beta parameter for alpha-beta pruning. Passed from the recursive evaluation.
+     * @param start Start parameter of the recursive evaluation. Passed back to it once the streak is over.
+     * @return calls recursive evaluation to return to evaluating the position after the streak ended.
+     */
     private int streakHelper(int depth, int alpha, int beta, int start) {
         if (game.isOnTheStreak()) {
             Move[] captures = game.getLegalMoves();
