@@ -5,7 +5,8 @@ version: 2.1
 jobs:
   test:
     docker:
-      - image: cimg/base:stable
+      #- image: cimg/base:stable
+      - image: circleci/openjdk:11-jdk-buster
     steps:
       - checkout
       # Replace this with a real test runner invocation
