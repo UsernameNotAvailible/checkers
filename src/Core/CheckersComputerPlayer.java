@@ -39,6 +39,13 @@ public class CheckersComputerPlayer {
         game.makeMove(move);}
 
     /**
+     * Unmakes the last move
+     */
+    public void unmakeMove() {
+        game.unmakeMove();
+    }
+
+    /**
      * Counts material on one side
      * @param side 1 for white, 2 for black
      * @return checker count for one side
@@ -77,8 +84,8 @@ public class CheckersComputerPlayer {
      */
     private int recursiveEvaluate(int depth, int alpha, int beta, int start) {
         if (depth == 0) {
-            return evaluate();
-            //return recursiveCapturesEvaluation(alpha, beta);
+            //return evaluate();
+            return -recursiveCapturesEvaluation(alpha, beta);
         }
         Move[] moves = game.getLegalMoves();
         if (moves[0] == null) return -100;
@@ -116,7 +123,7 @@ public class CheckersComputerPlayer {
         for (int i = 0; captureMoves[i] != null; i++) {
             game.makeMove(captureMoves[i]);
             if (game.isOnTheStreak()) {
-                evaluation = capturesStreakHelper(alpha, beta);
+                evaluation = -capturesStreakHelper(alpha, beta);
             }
             else {
                 evaluation = -recursiveCapturesEvaluation(-beta, -alpha);

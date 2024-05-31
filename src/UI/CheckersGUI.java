@@ -65,6 +65,7 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
+        if (!colourOfThePlayer) {makeEngineMove();}
     }
     /**
      * Takes a FEN string and arranges the starting position accordingly.
@@ -109,6 +110,7 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
+        if (!colourOfThePlayer) {makeEngineMove();}
     }
     private void setButtons() {
         ButtonHandler buttonHandler = new ButtonHandler();
@@ -187,7 +189,9 @@ public class CheckersGUI extends JFrame {
                 game.makeMove(move);
                 setPieces(game.getBoard());
                 engine.makeMove(move);
-                makeEngineMove();
+                if (!game.isOnTheStreak()) {
+                    makeEngineMove();
+                }
             }
             else {
                 System.out.println("illegal move");
@@ -202,6 +206,10 @@ public class CheckersGUI extends JFrame {
     }
     private void makeEngineMove() {
         move = engine.returnMove();
+        System.out.println("Move is " + move);
+        game.debugPrint();
+        System.out.println("Engine's debug print");
+        engine.debugPrint();
         game.makeMove(move);
         engine.makeMove(move);
         setPieces(game.getBoard());
@@ -217,6 +225,8 @@ public class CheckersGUI extends JFrame {
             Object source = e.getSource();
             if (source == bottomButtons[0]) {
                 game.unmakeMove();
+                engine.unmakeMove();
+                engine.debugPrint();
                 setPieces(game.getBoard());
             }
             if (source == bottomButtons[1]) {
