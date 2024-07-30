@@ -7,7 +7,7 @@ import javax.swing.*;
  * @version 0.1
  */
 public class Icons {
-    static Icon blackPiece = new ImageIcon("..\\checkers\\blackChecker.png");
+    static Icon blackPiece = new ImageIcon("..\\checkers\\redChecker.png");
     static Icon whitePiece = new ImageIcon("..\\checkers\\whiteChecker.png");
     static Icon emptySquare = new ImageIcon("..\\checkers\\EmptySquare.jpg");
     static Icon backArrow = new ImageIcon("..\\checkers\\backArrow.jpg");

@@ -19,7 +19,7 @@ public class CheckersGUI extends JFrame {
     private static Container checkersBoard = new JPanel();
     private JButton[] squares = new JButton[64];
     private JPanel buttonPanel = new JPanel();
-    private JButton[] bottomButtons = new JButton[2];
+    private JButton[] bottomButtons = new JButton[3];
     private Color colour = Color.DARK_GRAY;
     private int clickCounter = 0;
     private Move move = new Move();
@@ -27,6 +27,7 @@ public class CheckersGUI extends JFrame {
     private boolean colourOfThePlayer = false;
     private boolean boardTurnedAround = false;
     private boolean newMoveAvailable = false;
+    private boolean restartingTheEngine = false;
     final Thread thread = new Thread(new BoardUpdater());
     /** Default constructor. It sets up the board in a default position. Takes no arguments.*/
     public CheckersGUI() {
@@ -139,7 +140,7 @@ public class CheckersGUI extends JFrame {
 
         }
         BottomButtonHandler bottomButtonHandler = new BottomButtonHandler();
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             bottomButtons[i] = new JButton();
             bottomButtons[i].addActionListener(bottomButtonHandler);
             buttonPanel.add(bottomButtons[i]);
@@ -251,15 +252,23 @@ public class CheckersGUI extends JFrame {
             Object source = e.getSource();
             if (source == bottomButtons[0]) {
                 game.unmakeMove();
+                setPieces(game.getBoard());
                 if (engineEnabled) {
                     engine.unmakeMove();
                     engine.debugPrint();
                 }
-                setPieces(game.getBoard());
             }
             if (source == bottomButtons[1]) {
                 boardTurnedAround = !boardTurnedAround;
                 setPieces(game.getBoard());
+            }
+            if (source == bottomButtons[2]) {
+                if (game.isBlacksMove()!= colourOfThePlayer && engineEnabled) {
+                    synchronized (thread) {
+                        restartingTheEngine = true;
+                        thread.notify();
+                    }
+                }
             }
         }
     }
@@ -295,6 +304,8 @@ public class CheckersGUI extends JFrame {
                 if (newMoveAvailable) {
                     makeMove();
                     newMoveAvailable = false;
+                } else if (restartingTheEngine) {
+                    makeEngineMove();
                 }
             }
         }
