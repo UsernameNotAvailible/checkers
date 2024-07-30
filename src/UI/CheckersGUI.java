@@ -26,6 +26,8 @@ public class CheckersGUI extends JFrame {
     private boolean engineEnabled = false;
     private boolean colourOfThePlayer = false;
     private boolean boardTurnedAround = false;
+    private boolean newMoveAvailable = false;
+    final Thread thread = new Thread(new BoardUpdater());
     /** Default constructor. It sets up the board in a default position. Takes no arguments.*/
     public CheckersGUI() {
         super("Checkers Board");
@@ -42,6 +44,7 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
+        thread.start();
     }
     /**
      * Starts a game against the computer. Chooses the colour of the player.
@@ -67,6 +70,7 @@ public class CheckersGUI extends JFrame {
         setPieces(game.getBoard());
         setVisible(true);
         if (colourOfThePlayer) {makeEngineMove();}
+        thread.start();
     }
     /**
      * Takes a FEN string and arranges the starting position accordingly.
@@ -87,6 +91,8 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
+        new Thread(new BoardUpdater()).start();
+        thread.start();
     }
     /**
      * Takes the colour of the player and a FEN string.
@@ -113,6 +119,7 @@ public class CheckersGUI extends JFrame {
         setPieces(game.getBoard());
         setVisible(true);
         if (colourOfThePlayer != game.isBlacksMove()) {makeEngineMove();}
+        thread.start();
     }
     private void setButtons() {
         ButtonHandler buttonHandler = new ButtonHandler();
@@ -162,7 +169,12 @@ public class CheckersGUI extends JFrame {
                         else move.endingSquare = 63 - i;
                         if (game.checkChecker(move.startingSquare) == CheckersLogic.BLACK_CHECKER) move.colour = CheckersLogic.BLACKS_MOVE;
                         else if (game.checkChecker(move.startingSquare) == CheckersLogic.WHITE_CHECKER) move.colour = CheckersLogic.WHITES_MOVE;
-                        makeMove();
+                        //makeMove();
+                        //Thread thread = new Thread(new BoardUpdater());
+                        newMoveAvailable = true;
+                        synchronized (thread) {
+                            thread.notify();
+                        }
                         return;
                     }
                 }
@@ -210,7 +222,7 @@ public class CheckersGUI extends JFrame {
     }
     private void makeEngineMove() {
         try {
-            Thread.sleep(1);
+            Thread.sleep(1000);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -224,6 +236,7 @@ public class CheckersGUI extends JFrame {
         game.makeMove(move);
         engine.makeMove(move);
         setPieces(game.getBoard());
+        //new Thread(new BoardUpdater()).start();
         if (game.isBlacksMove() != colourOfThePlayer) {
             makeEngineMove();
         }
@@ -264,6 +277,25 @@ public class CheckersGUI extends JFrame {
             for (int i = 0; i < 64; i++) {
                 if (board[i] == CheckersLogic.WHITE_CHECKER) squares[63 - i].setIcon(Icons.whitePiece);
                 else if (board[i] == CheckersLogic.BLACK_CHECKER) squares[63 - i].setIcon(Icons.blackPiece);
+            }
+        }
+    }
+    private class BoardUpdater implements Runnable {
+        @Override
+        public void run() {
+            //setPieces(game.getBoard());
+            while (true) {
+                synchronized (thread) {
+                    try {
+                        thread.wait();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (newMoveAvailable) {
+                    makeMove();
+                    newMoveAvailable = false;
+                }
             }
         }
     }
