@@ -28,6 +28,17 @@ public class CheckersComputerPlayer {
      * @return move field of the class.
      * */
     public Move returnMove() {
+        /*Move[] moves = game.getLegalMoves();
+        move = moves[0];
+        game.makeMove(moves[0]);
+        int evaluation = recursiveEvaluate(4, minimalPossible, maximumPossible, 4);
+        game.unmakeMove();
+        for (int i = 1; moves[i] != null && i < 30; i++) {
+            game.makeMove(moves[i]);
+            if (recursiveEvaluate(4, minimalPossible, maximumPossible, 4) > evaluation) move = moves[i];
+            game.unmakeMove();
+        }*/
+        move = game.getLegalMoves()[0];
         recursiveEvaluate(4, minimalPossible, maximumPossible, 4);
         return move;
     }
@@ -53,10 +64,9 @@ public class CheckersComputerPlayer {
     private int countMaterial(int side) {
         int evaluation = 0;
         int[] board = game.getBoard();
-        if (game.isBlacksMove()) {
-            for (int i = 0; i < 64; i++) {
-                if (board[i] == side) evaluation += checkersWorth;
-            }
+
+        for (int i = 0; i < 64; i++) {
+            if (board[i] == side) evaluation += checkersWorth;
         }
         return evaluation;
     }
@@ -85,11 +95,11 @@ public class CheckersComputerPlayer {
     private int recursiveEvaluate(int depth, int alpha, int beta, int start) {
         if (depth == 0) {
             //return evaluate();
-            return -recursiveCapturesEvaluation(alpha, beta);
+            return recursiveCapturesEvaluation(alpha, beta);
         }
         Move[] moves = game.getLegalMoves();
         if (moves[0] == null) return -100;
-        int evaluation = 0;
+        int evaluation;
         for (int i = 0; moves[i] != null && i < 30; i++) {
             game.makeMove(moves[i]);
             if (game.isOnTheStreak()) {
@@ -142,40 +152,42 @@ public class CheckersComputerPlayer {
      * @return calls recursive captures evaluation to return to evaluating the position after the streak ended.
      */
     private int capturesStreakHelper(int alpha, int beta) {
+        int evaluation = 0;
         if (game.isOnTheStreak()) {
             Move[] captures = game.getLegalMoves();
             for (int j = 0; captures[j] != null; j++) {
                 game.makeMove(captures[j]);
-                capturesStreakHelper(alpha, beta);
+                evaluation = capturesStreakHelper(alpha, beta);
                 game.unmakeMove();
             }
         }
         else {
             return recursiveCapturesEvaluation(-beta, -alpha);
         }
-        return 0;
+        return evaluation;
     }
     /**
      * Helps recursive evaluation go through the streak
-     * @param depth Depth parameter of the recursive evaluation. Passed back to it once the streak is over.
+     * @param depth Depth parameter of the recursisve evaluation. Passed back to it once the streak is over.
      * @param alpha Alpha parameter for alpha-beta pruning. Passed from the recursive evaluation.
      * @param beta Beta parameter for alpha-beta pruning. Passed from the recursive evaluation.
      * @param start Start parameter of the recursive evaluation. Passed back to it once the streak is over.
      * @return calls recursive evaluation to return to evaluating the position after the streak ended.
      */
     private int streakHelper(int depth, int alpha, int beta, int start) {
+        int evaluation = 0;
         if (game.isOnTheStreak()) {
             Move[] captures = game.getLegalMoves();
             for (int j = 0; captures[j] != null; j++) {
                 game.makeMove(captures[j]);
-                streakHelper(depth, alpha, beta, start);
+                evaluation = streakHelper(depth, alpha, beta, start);
                 game.unmakeMove();
             }
         }
         else {
             return recursiveEvaluate(depth - 1, -beta, -alpha, start);
         }
-        return 0;
+        return evaluation;
     }
 
     /**

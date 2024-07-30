@@ -49,6 +49,7 @@ public class CheckersGUI extends JFrame {
      * */
     public CheckersGUI(boolean colourOfThePlayer) {
         super("Checkers Board");
+        boardTurnedAround = colourOfThePlayer;
         this.engineEnabled = true;
         engine = new CheckersComputerPlayer();
         this.colourOfThePlayer = colourOfThePlayer;
@@ -65,7 +66,7 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
-        if (!colourOfThePlayer) {makeEngineMove();}
+        if (colourOfThePlayer) {makeEngineMove();}
     }
     /**
      * Takes a FEN string and arranges the starting position accordingly.
@@ -94,6 +95,7 @@ public class CheckersGUI extends JFrame {
      * */
     public CheckersGUI(String FEN, boolean colourOfThePlayer) {
         super("Checkers Board");
+        boardTurnedAround = colourOfThePlayer;
         this.engineEnabled = true;
         this.colourOfThePlayer = colourOfThePlayer;
         engine = new CheckersComputerPlayer(FEN);
@@ -110,7 +112,7 @@ public class CheckersGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
-        if (!colourOfThePlayer) {makeEngineMove();}
+        if (colourOfThePlayer != game.isBlacksMove()) {makeEngineMove();}
     }
     private void setButtons() {
         ButtonHandler buttonHandler = new ButtonHandler();
@@ -188,9 +190,11 @@ public class CheckersGUI extends JFrame {
             if (game.ruleCheck(move)) {
                 game.makeMove(move);
                 setPieces(game.getBoard());
-                engine.makeMove(move);
-                if (!game.isOnTheStreak()) {
-                    makeEngineMove();
+                if (game.getGameState() == 0) {
+                    engine.makeMove(move);
+                    if (!game.isOnTheStreak()) {
+                        makeEngineMove();
+                    }
                 }
             }
             else {
@@ -205,15 +209,24 @@ public class CheckersGUI extends JFrame {
         }
     }
     private void makeEngineMove() {
+        try {
+            Thread.sleep(1);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         move = engine.returnMove();
         System.out.println("Move is " + move);
         game.debugPrint();
         System.out.println("Engine's debug print");
+        System.out.println("Move is: " + move);
         engine.debugPrint();
         game.makeMove(move);
         engine.makeMove(move);
         setPieces(game.getBoard());
-        if (game.isBlacksMove() != colourOfThePlayer) makeEngineMove();
+        if (game.isBlacksMove() != colourOfThePlayer) {
+            makeEngineMove();
+        }
     }
     private class BottomButtonHandler implements ActionListener {
 
@@ -225,8 +238,10 @@ public class CheckersGUI extends JFrame {
             Object source = e.getSource();
             if (source == bottomButtons[0]) {
                 game.unmakeMove();
-                engine.unmakeMove();
-                engine.debugPrint();
+                if (engineEnabled) {
+                    engine.unmakeMove();
+                    engine.debugPrint();
+                }
                 setPieces(game.getBoard());
             }
             if (source == bottomButtons[1]) {

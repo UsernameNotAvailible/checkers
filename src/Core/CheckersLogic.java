@@ -20,6 +20,7 @@ public class CheckersLogic {
     public static final int EMPTY_SQUARE = 0;
     /** A constant representing the white checker on the board */
     public static final int WHITE_CHECKER = 1;
+    public static final int NO_SQUARE = -1;
     public static final boolean WHITES_MOVE = false;
     public static final boolean BLACKS_MOVE = true;
     /** A constant representing the black checker on the board */
@@ -31,7 +32,7 @@ public class CheckersLogic {
     private boolean capture = false;
     private boolean onTheStreak = false;
     private int gameState = 0;
-    private int streakingSquare = -1;
+    private int streakingSquare = NO_SQUARE;
     private int moveCounter = 0;
     private int plyCounter = 0;
     /**
@@ -152,41 +153,41 @@ public class CheckersLogic {
      * @return true if the move is within the rules, false otherwise.
      * */
     public boolean ruleCheck(Move move) {
-        if (move.endingSquare < 0 || move.endingSquare > 63 || move.startingSquare < 0 || move.startingSquare > 63) return false;
+        if (move.endingSquare < 0 || move.endingSquare > 63 || move.startingSquare < 0 || move.startingSquare > 63) return false; // check if inside the board
         int dif = move.endingSquare - move.startingSquare;
-        if (!withinAllowableSquares(dif)) return false;
-        if (move.colour != blacksMove) return false;
-        if (board[move.endingSquare] != EMPTY_SQUARE) return false;
-        if (move.startingSquare % 8 == 0 && (move.endingSquare % 8) > 2) return false;
+        if (!withinAllowableSquares(dif)) return false; // check if the move is 1 or 2 squares on the diagonal
+        if (move.colour != blacksMove) return false; // check if the right colour is moving
+        if (board[move.endingSquare] != EMPTY_SQUARE) return false; // checks if the target square is empty
+        if (move.startingSquare % 8 == 0 && (move.endingSquare % 8) > 2) return false; // checks if the move goes through the edge of the board
         if (move.startingSquare % 8 == 7 && (move.endingSquare % 8) < 5) return false;
         if (move.startingSquare % 8 == 1 && (move.endingSquare % 8) > 3) return false;
         if (move.startingSquare % 8 == 6 && (move.endingSquare % 8) < 4) return false;
         if (move.colour) {
-            if (!onTheStreak) {
-                if (dif < 0) return false;
-                if (captureForwardAllCheck(BLACK_CHECKER) && abs(dif) <= 9) return false;
-                if (dif > 9 && board[move.startingSquare + dif / 2] != WHITE_CHECKER) return false;
-                else if (dif > 9) capture = true;
+            if (!onTheStreak) { // check if not on streak
+                if (dif < 0 && abs(dif) < 9) return false;
+                if (captureAvailabilityAllCheck(BLACK_CHECKER) && abs(dif) <= 9) return false; // check if a capture is available
+                if (abs(dif) > 9 && board[move.startingSquare + dif / 2] != WHITE_CHECKER) return false; // check if the captured checker is the opponent's one
+                else if (abs(dif) > 9) capture = true; // mark the move as a capture
             }
             else {
-                if (!(abs(dif) > 9)) return false;
-                else capture = true;
-                if (board[move.startingSquare + dif / 2] != WHITE_CHECKER) return false;
-                if (move.startingSquare != streakingSquare) return false;
+                if (!(abs(dif) > 9)) return false; // check if it's a capture
+                else capture = true; // mark the move as a capture
+                if (board[move.startingSquare + dif / 2] != WHITE_CHECKER) return false; // check if the captured checker is the opponent's one
+                if (move.startingSquare != streakingSquare) return false; // check if the capturing checker is the same as for the previous streak capture
             }
         }
         else {
-            if (!onTheStreak) {
-                if (dif > 0) return false;
-                if (captureForwardAllCheck(WHITE_CHECKER) && abs(dif) <= 9) return false;
-                if (dif < -9 && board[move.startingSquare + dif / 2] != BLACK_CHECKER) return false;
-                else if (dif < -9) capture = true;
+            if (!onTheStreak) { // check if not on streak
+                if (dif > 0  && abs(dif) < 9) return false;
+                if (captureAvailabilityAllCheck(WHITE_CHECKER) && abs(dif) <= 9) return false; // check if a capture is available
+                if (abs(dif) > 9 && board[move.startingSquare + dif / 2] != BLACK_CHECKER) return false; // check if the captured checker is the opponent's one
+                else if (abs(dif) > 9) capture = true; // mark the move as a capture
             }
             else {
-                if (!(abs(dif) > 9)) return false;
-                else capture = true;
-                if (board[move.startingSquare + dif / 2] != BLACK_CHECKER) return false;
-                if (move.startingSquare != streakingSquare) return false;
+                if (!(abs(dif) > 9)) return false; // check if it's a capture
+                else capture = true; // mark the move as a capture
+                if (board[move.startingSquare + dif / 2] != BLACK_CHECKER) return false; // check if the captured checker is the opponent's one
+                if (move.startingSquare != streakingSquare) return false; // check if the capturing checker is the same as for the previous streak capture
             }
         }
         return true;
@@ -200,12 +201,10 @@ public class CheckersLogic {
             if (board[i] == colour) {
                 move.startingSquare = i;
                 if (move.colour) {
-                    if(onTheStreak) {
-                        move.endingSquare = i - 14;
-                        if (ruleCheck(move)) return false;
-                        move.endingSquare = i - 18;
-                        if (ruleCheck(move)) return false;
-                    }
+                    move.endingSquare = i - 14;
+                    if (ruleCheck(move)) return false;
+                    move.endingSquare = i - 18;
+                    if (ruleCheck(move)) return false;
                     move.endingSquare = i + 7;
                     if (ruleCheck(move)) return false;
                     move.endingSquare = i + 9;
@@ -215,12 +214,10 @@ public class CheckersLogic {
                     move.endingSquare = i + 18;
                 }
                 else {
-                    if (onTheStreak) {
-                        move.endingSquare = i + 14;
-                        if (ruleCheck(move)) return false;
-                        move.endingSquare = i + 18;
-                        if (ruleCheck(move)) return false;
-                    }
+                    move.endingSquare = i + 14;
+                    if (ruleCheck(move)) return false;
+                    move.endingSquare = i + 18;
+                    if (ruleCheck(move)) return false;
                     move.endingSquare = i - 7;
                     if (ruleCheck(move)) return false;
                     move.endingSquare = i - 9;
@@ -277,34 +274,58 @@ public class CheckersLogic {
             }
         }
         onTheStreak = false;
-        streakingSquare = -1;
+        streakingSquare = NO_SQUARE;
         return false;
     }
-    private boolean captureForwardCheck(int square) {
+    private boolean captureAvailabilityCheck(int square) {
         int file = square % 8;
-        if (square + 14 < BOARD_SIZE && file > 1 && blacksMove) {
-            if (board[square + 7] == WHITE_CHECKER && board[square + 14] == EMPTY_SQUARE)
-                return true;
+        if (blacksMove) {
+            if (square + 14 < BOARD_SIZE && file > 1) {
+                if (board[square + 7] == WHITE_CHECKER && board[square + 14] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square + 18 < BOARD_SIZE && file < 6) {
+                if (board[square + 9] == WHITE_CHECKER && board[square + 18] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square - 14 >= 0 && file < 6) {
+                if (board[square - 7] == WHITE_CHECKER && board[square - 14] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square - 18 >= 0 && file > 1) {
+                if (board[square - 9] == WHITE_CHECKER && board[square - 18] == EMPTY_SQUARE)
+                    return true;
+            }
         }
-        if (square + 18 < BOARD_SIZE && file < 6 && blacksMove) {
-            if (board[square + 9] == WHITE_CHECKER && board[square + 18] == EMPTY_SQUARE)
-                return true;
-        }
-        if (square - 14 >= 0 && file < 6 && !blacksMove) {
-            if (board[square - 7] == BLACK_CHECKER && board[square - 14] == EMPTY_SQUARE)
-                return true;
-        }
-        if (square - 18 >= 0 && file > 1 && !blacksMove) {
-            if (board[square - 9] == BLACK_CHECKER && board[square - 18] == EMPTY_SQUARE)
-                return true;
+        else {
+            if (square + 14 < BOARD_SIZE && file > 1) {
+                if (board[square + 7] == BLACK_CHECKER && board[square + 14] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square + 18 < BOARD_SIZE && file < 6) {
+                if (board[square + 9] == BLACK_CHECKER && board[square + 18] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square - 14 >= 0 && file < 6) {
+                if (board[square - 7] == BLACK_CHECKER && board[square - 14] == EMPTY_SQUARE)
+                    return true;
+            }
+            if (square - 18 >= 0 && file > 1) {
+                if (board[square - 9] == BLACK_CHECKER && board[square - 18] == EMPTY_SQUARE)
+                    return true;
+            }
         }
         capture = false;
         return false;
     }
-    private boolean captureForwardAllCheck(int checker) {
+    private int getOpponentsChecker() {
+        if (blacksMove) return WHITE_CHECKER;
+        else return BLACK_CHECKER;
+    }
+    private boolean captureAvailabilityAllCheck(int checker) {
         for (int i = 0; i < board.length; i++) {
             if (board[i] == checker) {
-                if (captureForwardCheck(i)) return true;
+                if (captureAvailabilityCheck(i)) return true;
             }
         }
         return false;
@@ -401,12 +422,10 @@ public class CheckersLogic {
             for (int i = 0; i < BOARD_SIZE; i++) {
                 if (board[i] == BLACK_CHECKER) {
                     move.startingSquare = i;
-                    if(onTheStreak) {
-                        move.endingSquare = i - 14;
-                        if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
-                        move.endingSquare = i - 18;
-                        if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
-                    }
+                    move.endingSquare = i - 14;
+                    if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
+                    move.endingSquare = i - 18;
+                    if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
                     move.endingSquare = i + 7;
                     if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
                     move.endingSquare = i + 9;
@@ -422,12 +441,10 @@ public class CheckersLogic {
             for (int i = 0; i < BOARD_SIZE; i++) {
                 if (board[i] == WHITE_CHECKER) {
                     move.startingSquare = i;
-                    if(onTheStreak) {
-                        move.endingSquare = i + 14;
-                        if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
-                        move.endingSquare = i + 18;
-                        if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
-                    }
+                    move.endingSquare = i + 14;
+                    if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
+                    move.endingSquare = i + 18;
+                    if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
                     move.endingSquare = i - 7;
                     if (ruleCheck(move)) {moves[counter] = move.clone(); counter++;}
                     move.endingSquare = i - 9;
