@@ -38,7 +38,7 @@ public class CheckersComputerPlayer {
             if (recursiveEvaluate(4, minimalPossible, maximumPossible, 4) > evaluation) move = moves[i];
             game.unmakeMove();
         }*/
-        move = game.getLegalMoves()[0];
+        //move = game.getLegalMoves()[0];
         recursiveEvaluate(4, minimalPossible, maximumPossible, 4);
         return move;
     }
@@ -58,7 +58,7 @@ public class CheckersComputerPlayer {
 
     /**
      * Counts material on one side
-     * @param side 1 for white, 2 for black
+     * @param side type of piece counted
      * @return checker count for one side
      */
     private int countMaterial(int side) {
@@ -66,7 +66,7 @@ public class CheckersComputerPlayer {
         int[] board = game.getBoard();
 
         for (int i = 0; i < 64; i++) {
-            if (board[i] == side) evaluation += checkersWorth;
+            if (board[i] == side) evaluation += checkersWorth * ((side & 1) == 1 ? 1 : 5);
         }
         return evaluation;
     }
@@ -76,9 +76,15 @@ public class CheckersComputerPlayer {
      * @return the evaluation of the position on the board. From the perspective of the side whose move it is
      */
     private int evaluate() {
-        int whiteEval = countMaterial(CheckersLogic.WHITE_CHECKER);
-        int blackEval = countMaterial(CheckersLogic.BLACK_CHECKER);
-        int evaluation = whiteEval - blackEval;
+        int gameState = game.getGameState();
+        int evaluation;
+        if (gameState == -1) evaluation = maximumPossible;
+        else if (gameState == 1) evaluation = minimalPossible;
+        else {
+            int whiteEval = countMaterial(CheckersLogic.WHITE_CHECKER) + countMaterial(CheckersLogic.WHITE_QUEEN);
+            int blackEval = countMaterial(CheckersLogic.BLACK_CHECKER) + countMaterial(CheckersLogic.BLACK_QUEEN);
+            evaluation = whiteEval - blackEval;
+        }
         int perspective = 1;
         if (game.isBlacksMove()) perspective = -1;
         return evaluation * perspective;

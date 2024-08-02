@@ -3,6 +3,7 @@ package UI;
 import Core.CheckersComputerPlayer;
 import Core.CheckersLogic;
 import Core.Move;
+import Core.Size;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,11 +14,11 @@ import java.awt.event.ActionListener;
  * @author Artem Tarnavskyi
  * @version 0.1
  */
-public class CheckersGUI extends JFrame {
+public class CheckersGUI extends JFrame implements Size {
     private CheckersLogic game;
     private CheckersComputerPlayer engine;
     private static Container checkersBoard = new JPanel();
-    private JButton[] squares = new JButton[64];
+    private JButton[] squares = new JButton[BOARD_SIZE];
     private JPanel buttonPanel = new JPanel();
     private JButton[] bottomButtons = new JButton[3];
     private Color colour = Color.DARK_GRAY;
@@ -33,18 +34,7 @@ public class CheckersGUI extends JFrame {
     public CheckersGUI() {
         super("Checkers Board");
         game = new CheckersLogic();
-        setLayout(new BorderLayout());
-        checkersBoard.setLayout(new GridLayout(8,8));
-        setButtons();
-        add(checkersBoard, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-        setSize(800, 820);
-        checkersBoard.setSize(800, 800);
-        setResizable(false);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setPieces(game.getBoard());
-        setVisible(true);
+        setBoard();
         thread.start();
     }
     /**
@@ -58,19 +48,16 @@ public class CheckersGUI extends JFrame {
         engine = new CheckersComputerPlayer();
         this.colourOfThePlayer = colourOfThePlayer;
         game = new CheckersLogic();
-        setLayout(new BorderLayout());
-        checkersBoard.setLayout(new GridLayout(8,8));
-        setButtons();
-        add(checkersBoard, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-        setSize(800, 820);
-        checkersBoard.setSize(800, 800);
-        setResizable(false);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setPieces(game.getBoard());
-        setVisible(true);
-        if (colourOfThePlayer) {makeEngineMove();}
+        setBoard();
+        if (colourOfThePlayer) {
+            try {
+                Thread.sleep(1000);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            makeEngineMove();
+        }
         thread.start();
     }
     /**
@@ -80,19 +67,7 @@ public class CheckersGUI extends JFrame {
     public CheckersGUI(String FEN) {
         super("Checkers Board");
         game = new CheckersLogic(FEN);
-        setLayout(new BorderLayout());
-        checkersBoard.setLayout(new GridLayout(8,8));
-        setButtons();
-        add(checkersBoard, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-        setSize(800, 820);
-        checkersBoard.setSize(800, 800);
-        setResizable(false);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setPieces(game.getBoard());
-        setVisible(true);
-        new Thread(new BoardUpdater()).start();
+        setBoard();
         thread.start();
     }
     /**
@@ -107,26 +82,31 @@ public class CheckersGUI extends JFrame {
         this.colourOfThePlayer = colourOfThePlayer;
         engine = new CheckersComputerPlayer(FEN);
         game = new CheckersLogic(FEN);
+        setBoard();
+        if (colourOfThePlayer != game.isBlacksMove()) {
+            makeEngineMove();
+        }
+        thread.start();
+    }
+    private void setBoard() {
         setLayout(new BorderLayout());
-        checkersBoard.setLayout(new GridLayout(8,8));
+        checkersBoard.setLayout(new GridLayout(BOARD_SIDE,BOARD_SIDE));
         setButtons();
         add(checkersBoard, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
-        setSize(800, 820);
-        checkersBoard.setSize(800, 800);
+        setSize(BOARD_SIDE * 100, BOARD_SIDE * 100 + 20);
+        checkersBoard.setSize(BOARD_SIDE * 100, BOARD_SIDE * 100);
         setResizable(false);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setPieces(game.getBoard());
         setVisible(true);
-        if (colourOfThePlayer != game.isBlacksMove()) {makeEngineMove();}
-        thread.start();
     }
     private void setButtons() {
         ButtonHandler buttonHandler = new ButtonHandler();
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < BOARD_SIZE; i++) {
             squares[i] = new JButton();
-            if (((i % 2 == 1) && ((i / 8) % 2 == 0)) || (i % 2 == 0) && ((i / 8) % 2 == 1)) {
+            if (i % 2 != (i / BOARD_SIDE) % 2) {
                 squares[i].setBackground(colour);
             }
             else {
@@ -155,21 +135,21 @@ public class CheckersGUI extends JFrame {
                 return;
             }
             Object source = e.getSource();
-            for (int i = 63; i > -1; i--) {
+            for (int i = BOARD_SIZE - 1; i > -1; i--) {
                 if (source == squares[i]) {
                     //System.out.print("square = " + i + "\n");
                     clickCounter = (clickCounter + 1) % 2;
                     if (clickCounter == 1) {
                         if (!boardTurnedAround) move.startingSquare = i;
-                        else move.startingSquare = 63 - i;
+                        else move.startingSquare = BOARD_SIZE - 1 - i;
                         if (game.checkChecker(move.startingSquare) == CheckersLogic.EMPTY_SQUARE) clickCounter = (clickCounter + 1) % 2;
-                        else if (game.checkChecker(move.startingSquare) == CheckersLogic.WHITE_CHECKER && game.isBlacksMove()) clickCounter = (clickCounter + 1) % 2;
-                        else if (game.checkChecker(move.startingSquare) == CheckersLogic.BLACK_CHECKER && !game.isBlacksMove()) clickCounter = (clickCounter + 1) % 2;
+                        else if (game.checkChecker(move.startingSquare) >> 2 == 0 && game.isBlacksMove()) clickCounter = (clickCounter + 1) % 2;
+                        else if (game.checkChecker(move.startingSquare) >> 2 == 1 && !game.isBlacksMove()) clickCounter = (clickCounter + 1) % 2;
                     } else {
                         if (!boardTurnedAround) move.endingSquare = i;
-                        else move.endingSquare = 63 - i;
-                        if (game.checkChecker(move.startingSquare) == CheckersLogic.BLACK_CHECKER) move.colour = CheckersLogic.BLACKS_MOVE;
-                        else if (game.checkChecker(move.startingSquare) == CheckersLogic.WHITE_CHECKER) move.colour = CheckersLogic.WHITES_MOVE;
+                        else move.endingSquare = BOARD_SIZE - 1 - i;
+                        if (game.checkChecker(move.startingSquare) >> 2 == 1) move.colour = CheckersLogic.BLACKS_MOVE;
+                        else if (game.checkChecker(move.startingSquare) >> 2 == 0) move.colour = CheckersLogic.WHITES_MOVE;
                         //makeMove();
                         //Thread thread = new Thread(new BoardUpdater());
                         newMoveAvailable = true;
@@ -273,19 +253,23 @@ public class CheckersGUI extends JFrame {
         }
     }
     private void setPieces(int[] board) {
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < BOARD_SIZE; i++) {
             squares[i].setIcon(Icons.emptySquare);
         }
         if (!boardTurnedAround) {
-            for (int i = 0; i < 64; i++) {
+            for (int i = 0; i < BOARD_SIZE; i++) {
                 if (board[i] == CheckersLogic.WHITE_CHECKER) squares[i].setIcon(Icons.whitePiece);
                 else if (board[i] == CheckersLogic.BLACK_CHECKER) squares[i].setIcon(Icons.blackPiece);
+                else if (board[i] == CheckersLogic.BLACK_QUEEN) squares[i].setIcon(Icons.blackQueen);
+                else if (board[i] == CheckersLogic.WHITE_QUEEN) squares[i].setIcon(Icons.whiteQueen);
             }
         }
         else {
-            for (int i = 0; i < 64; i++) {
-                if (board[i] == CheckersLogic.WHITE_CHECKER) squares[63 - i].setIcon(Icons.whitePiece);
-                else if (board[i] == CheckersLogic.BLACK_CHECKER) squares[63 - i].setIcon(Icons.blackPiece);
+            for (int i = 0; i < BOARD_SIZE; i++) {
+                if (board[i] == CheckersLogic.WHITE_CHECKER) squares[BOARD_SIZE - 1 - i].setIcon(Icons.whitePiece);
+                else if (board[i] == CheckersLogic.BLACK_CHECKER) squares[BOARD_SIZE - 1 - i].setIcon(Icons.blackPiece);
+                else if (board[i] == CheckersLogic.BLACK_QUEEN) squares[BOARD_SIZE - 1 - i].setIcon(Icons.blackQueen);
+                else if (board[i] == CheckersLogic.WHITE_QUEEN) squares[BOARD_SIZE - 1 - i].setIcon(Icons.whiteQueen);
             }
         }
     }
